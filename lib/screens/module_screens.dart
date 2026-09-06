@@ -453,10 +453,24 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
   }
 
   void _initTts() async {
+    // Improve TTS clarity by using a natural speech rate and pitch
     await flutterTts.setLanguage("en-US");
-    await flutterTts.setSpeechRate(0.5);
+    await flutterTts.setSpeechRate(0.9); // 0.5 is too slow and distorted, 0.9 is natural
     await flutterTts.setVolume(1.0);
-    await flutterTts.setPitch(1.0);
+    await flutterTts.setPitch(1.2); // Slightly higher pitch for a friendly companion voice
+    
+    // Try to get a high-quality voice if available
+    try {
+      List<dynamic> voices = await flutterTts.getVoices;
+      for (var voice in voices) {
+        if (voice["name"].toString().contains("en-US-network")) { // Use high quality network voice if available
+          await flutterTts.setVoice({"name": voice["name"], "locale": voice["locale"]});
+          break;
+        }
+      }
+    } catch (e) {
+      print("Could not set custom voice: $e");
+    }
   }
 
   @override
@@ -537,9 +551,11 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
     _hintTimer?.cancel();
 
     // Determine what to say based on their reply
-    String spokenFeedback = currentQ.avatarLine;
-    if (currentQ.type == 'open') {
-      spokenFeedback = "No worries you can definitely do it";
+    String spokenFeedback = "";
+    if (_currentIndex < storyQuestions.length - 1) {
+      spokenFeedback = "good! , shall we move to next question";
+    } else {
+      spokenFeedback = "congratulations! , you are completed this module";
     }
 
     setState(() {
