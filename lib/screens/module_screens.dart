@@ -485,8 +485,6 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
       _assistantState = AssistantState.appearing;
     });
     
-    flutterTts.speak("Here is your next question.");
-    
     // Voice plays for 2 seconds (welcome), then transitions to listening
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
@@ -513,8 +511,6 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
         setState(() {
           _assistantState = AssistantState.hinting;
         });
-        
-        _safeSpeak("Need a hint? Take your time and think carefully!");
         
         // Hint voice plays for 3 seconds, then back to listening
         Future.delayed(const Duration(seconds: 3), () {
@@ -570,7 +566,6 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() => _assistantState = AssistantState.guiding);
-        _safeSpeak("Let's move on.");
       }
       
       Future.delayed(const Duration(seconds: 2), () {
