@@ -456,7 +456,7 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
   void _initTts() async {
     // Improve TTS clarity by using a natural speech rate and pitch
     await flutterTts.setLanguage("en-US");
-    await flutterTts.setSpeechRate(0.9); // 0.5 is too slow and distorted, 0.9 is natural
+    await flutterTts.setSpeechRate(0.65); // Slower than 0.9, but faster than 0.5 to keep it clear
     await flutterTts.setVolume(1.0);
     await flutterTts.setPitch(1.2); // Slightly higher pitch for a friendly companion voice
     
