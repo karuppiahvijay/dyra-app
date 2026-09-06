@@ -434,6 +434,7 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
     "Fun item/snack": 30
   };
   List<String> _selectedBudgetItems = [];
+  String? _selectedMcqOption;
 
   String _errorText = "";
   AssistantState _assistantState = AssistantState.appearing;
@@ -542,6 +543,13 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
         });
         return;
       }
+    } else if (currentQ.type == 'mcq') {
+      if (_selectedMcqOption == null) {
+        setState(() {
+          _errorText = "Please select an option.";
+        });
+        return;
+      }
     }
 
     _hintTimer?.cancel();
@@ -578,6 +586,7 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
     setState(() {
       _textController.clear();
       _selectedBudgetItems.clear();
+      _selectedMcqOption = null;
       _budget = 100;
       
       if (_currentIndex < storyQuestions.length - 1) {
@@ -634,29 +643,54 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
 
   Widget _buildMCQ(List<String> options) {
     return Column(
-      children: options.map((option) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: InkWell(
-            onTap: (_assistantState == AssistantState.listening || _assistantState == AssistantState.hinting) ? _submitAnswer : null,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: (_assistantState != AssistantState.listening && _assistantState != AssistantState.hinting) 
-                    ? const Color(0xFF1E1C1C) 
-                    : const Color(0xFF262424),
-                border: Border.all(color: const Color(0xFF383535)),
-              ),
-              child: Text(
-                option, 
-                style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ...options.map((option) {
+          bool isSelected = _selectedMcqOption == option;
+          bool isSubmitted = (_assistantState != AssistantState.listening && _assistantState != AssistantState.hinting);
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: InkWell(
+              onTap: !isSubmitted ? () {
+                setState(() {
+                  _selectedMcqOption = option;
+                  _errorText = "";
+                });
+              } : null,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: isSelected 
+                      ? const Color(0xFFDA251D) 
+                      : (isSubmitted ? const Color(0xFF1E1C1C) : const Color(0xFF262424)),
+                  border: Border.all(color: isSelected ? const Color(0xFFDA251D) : const Color(0xFF383535)),
+                ),
+                child: Text(
+                  option, 
+                  style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500),
+                ),
               ),
             ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+        if (_errorText.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8.0, bottom: 8.0), child: Text(_errorText, style: const TextStyle(color: Colors.redAccent))),
+        const SizedBox(height: 16),
+        if (_assistantState == AssistantState.listening || _assistantState == AssistantState.hinting)
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDA251D),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+            ),
+            onPressed: _submitAnswer,
+            child: const Text("Submit Answer", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          )
+      ],
     );
   }
 
@@ -717,7 +751,7 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             onPressed: _submitAnswer,
-            child: const Text("Confirm Choices", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            child: const Text("Submit Answer", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           )
       ],
     );
