@@ -94,7 +94,7 @@ class _VideoTeachingScreenState extends State<VideoTeachingScreen> {
   Widget build(BuildContext context) {
     if (_isError) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF161515),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -118,7 +118,7 @@ class _VideoTeachingScreenState extends State<VideoTeachingScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF161515),
       body: Stack(
         children: [
           // Video Player
@@ -454,7 +454,7 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
 
   void _initTts() async {
     await flutterTts.setLanguage("en-US");
-    await flutterTts.setSpeechRate(0.5);
+    await flutterTts.setSpeechRate(1.0);
     await flutterTts.setVolume(1.0);
     await flutterTts.setPitch(1.0);
   }
@@ -813,7 +813,7 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
     final currentQ = storyQuestions[_currentIndex];
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF161515),
       body: SafeArea(
         child: Column(
           children: [

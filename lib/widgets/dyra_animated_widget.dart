@@ -73,7 +73,9 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
 
   Future<void> _initVideoControllers() async {
     try {
-      final blink = VideoPlayerController.asset('assets/animations/blinking.mp4');
+      final blink = kIsWeb 
+          ? VideoPlayerController.network('assets/assets/animations/blinking.mp4')
+          : VideoPlayerController.asset('assets/animations/blinking.mp4');
       _blinkController = blink;
       await blink.initialize();
       await blink.setVolume(0.0);
@@ -88,7 +90,9 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
     }
 
     try {
-      final clap = VideoPlayerController.asset('assets/animations/clapping.mp4');
+      final clap = kIsWeb
+          ? VideoPlayerController.network('assets/assets/animations/clapping.mp4')
+          : VideoPlayerController.asset('assets/animations/clapping.mp4');
       _clapController = clap;
       await clap.initialize();
       await clap.setVolume(0.0);
