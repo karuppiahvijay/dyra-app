@@ -90,21 +90,12 @@ class _DyraAvatarState extends State<DyraAvatar> with TickerProviderStateMixin {
 
     return ScaleTransition(
       scale: _scaleAnimation,
-      child: AnimatedBuilder(
-        animation: _talkingAnimation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(0, _talkingAnimation.value),
-            child: child,
-          );
-        },
-        child: Container(
-          width: widget.size,
-          height: widget.size,
-          child: Image.asset(
-            imagePath,
-            fit: BoxFit.contain, // Changed to contain so portrait isn't cropped
-          ),
+      child: Container(
+        width: widget.size,
+        height: widget.size,
+        child: Image.asset(
+          imagePath,
+          fit: BoxFit.contain, // Changed to contain so portrait isn't cropped
         ),
       ),
     );

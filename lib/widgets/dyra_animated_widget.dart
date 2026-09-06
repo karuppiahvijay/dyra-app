@@ -156,7 +156,7 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
     if (state == DyRaState.reaction || state == DyRaState.complete || state == DyRaState.encourage || state == DyRaState.typing) {
       return 'assets/animations/dyra_clap.gif'; // Clapping GIF after submitting answer or while typing
     } else {
-      return 'assets/animations/dyra_blink.gif'; // User's blinking animation
+      return 'assets/images/dyra_girl_sample.jpg'; // Perfectly static, crystal-clear image (no continuous shaking)
     }
   }
 
@@ -249,7 +249,7 @@ class _VoiceWaveformState extends State<_VoiceWaveform> with SingleTickerProvide
     super.initState();
     _waveController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 450),
+      duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
   }
 
@@ -270,10 +270,10 @@ class _VoiceWaveformState extends State<_VoiceWaveform> with SingleTickerProvide
           return AnimatedBuilder(
             animation: _waveController,
             builder: (context, child) {
-              // Create dynamic audio waveform height calculation
+              // Create gentle audio waveform height calculation
               double waveMultiplier = math.sin((index / 27) * math.pi); // Bell curve center height
-              double val = math.sin(_waveController.value * math.pi * 2 + (index * 0.4));
-              double height = 4 + (val.abs() * 24 * waveMultiplier);
+              double val = math.sin(_waveController.value * math.pi * 2 + (index * 0.2));
+              double height = 4 + (val.abs() * 12 * waveMultiplier); // Reduced from 24 to 12
 
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 2.5),
