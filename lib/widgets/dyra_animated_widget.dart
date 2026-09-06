@@ -216,84 +216,9 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 10),
-              
-              // Animated Voice Hearing Waveform
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                opacity: isListening ? 1.0 : 0.0,
-                child: const _VoiceWaveform(),
-              ),
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Custom animated voice hearing waveform
-class _VoiceWaveform extends StatefulWidget {
-  const _VoiceWaveform({Key? key}) : super(key: key);
-
-  @override
-  _VoiceWaveformState createState() => _VoiceWaveformState();
-}
-
-class _VoiceWaveformState extends State<_VoiceWaveform> with SingleTickerProviderStateMixin {
-  late AnimationController _waveController;
-
-  @override
-  void initState() {
-    super.initState();
-    _waveController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _waveController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(27, (index) {
-          return AnimatedBuilder(
-            animation: _waveController,
-            builder: (context, child) {
-              // Create gentle audio waveform height calculation
-              double waveMultiplier = math.sin((index / 27) * math.pi); // Bell curve center height
-              double val = math.sin(_waveController.value * math.pi * 2 + (index * 0.2));
-              double height = 4 + (val.abs() * 12 * waveMultiplier); // Reduced from 24 to 12
-
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                width: 3.5,
-                height: height,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDA251D),
-                  borderRadius: BorderRadius.circular(2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFDA251D).withOpacity(0.4),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    )
-                  ],
-                ),
-              );
-            },
-          );
-        }),
       ),
     );
   }
