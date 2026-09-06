@@ -619,7 +619,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icons.storefront,
             buttonText: AppProgressManager.instance.isModule1Completed ? 'Play Again' : 'Play Game Now',
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const VideoTeachingScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const StoryInteractiveScreen()));
             },
           ),
           const SizedBox(height: 16),
@@ -640,7 +640,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             isLocked: !AppProgressManager.instance.isModule1Completed,
             onTap: AppProgressManager.instance.isModule1Completed ? () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const Module2DragDropGameScreen()));
-            } : null,
+            } : () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Module 2 is locked! Complete Module 1 first.')));
+            },
           ),
           const SizedBox(height: 16),
 
@@ -654,7 +656,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             isLocked: !AppProgressManager.instance.isModule1Completed,
             onTap: AppProgressManager.instance.isModule1Completed ? () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const Module2HomeTaskScreen()));
-            } : null,
+            } : () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Home Task is locked! Complete Module 1 first.')));
+            },
           ),
           const SizedBox(height: 16),
 

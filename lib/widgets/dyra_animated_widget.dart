@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:confetti/confetti.dart';
+import 'package:video_player/video_player.dart';
 
 enum DyRaState { entry, listening, hint, reaction, encourage, complete, typing }
 
@@ -23,11 +24,18 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
 
   late ConfettiController _confettiController;
 
+  VideoPlayerController? _blinkController;
+  VideoPlayerController? _clapController;
+  bool _isBlinkInitialized = false;
+  bool _isClapInitialized = false;
+
   @override
   void initState() {
     super.initState();
 
-    // 1. Popup Entrance Animation (smooth, springy popup when question appears)
+    _initVideoControllers();
+
+    // 1. Popup Entrance Animation
     _popupController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 650),
@@ -47,7 +55,7 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
 
     _popupController.forward();
 
-    // 2. Icon Pop Animation (Elastic bounce when an icon appears)
+    // 2. Icon Pop Animation
     _iconPopController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -63,26 +71,83 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
     _triggerAnimationsForState(widget.state);
   }
 
+  Future<void> _initVideoControllers() async {
+    try {
+      final blink = VideoPlayerController.asset('assets/animations/blinking.mp4');
+      _blinkController = blink;
+      await blink.initialize();
+      await blink.setVolume(0.0);
+      await blink.setLooping(true);
+      if (mounted) {
+        setState(() {
+          _isBlinkInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error initializing blinking.mp4: $e");
+    }
+
+    try {
+      final clap = VideoPlayerController.asset('assets/animations/clapping.mp4');
+      _clapController = clap;
+      await clap.initialize();
+      await clap.setVolume(0.0);
+      await clap.setLooping(true);
+      if (mounted) {
+        setState(() {
+          _isClapInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error initializing clapping.mp4: $e");
+    }
+
+    if (mounted) {
+      _updateVideoPlayback(widget.state);
+    }
+  }
+
   @override
   void didUpdateWidget(DyRaCompanion oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.state != widget.state) {
       _triggerAnimationsForState(widget.state);
+      _updateVideoPlayback(widget.state);
+    }
+  }
+
+  void _updateVideoPlayback(DyRaState state) {
+    final path = _getAvatarVideoPath(state);
+    if (path == 'assets/animations/clapping.mp4') {
+      if (_isBlinkInitialized && _blinkController != null) {
+        _blinkController!.pause();
+        _blinkController!.seekTo(Duration.zero);
+      }
+      if (_isClapInitialized && _clapController != null) {
+        _clapController!.setVolume(0.0);
+        _clapController!.play().catchError((e) => debugPrint("Clap play error: $e"));
+      }
+    } else {
+      if (_isClapInitialized && _clapController != null) {
+        _clapController!.pause();
+        _clapController!.seekTo(Duration.zero);
+      }
+      if (_isBlinkInitialized && _blinkController != null) {
+        _blinkController!.setVolume(0.0);
+        _blinkController!.play().catchError((e) => debugPrint("Blink play error: $e"));
+      }
     }
   }
 
   void _triggerAnimationsForState(DyRaState state) {
-    // Re-play popup if entering a new question
     if (state == DyRaState.entry) {
       _popupController.reset();
       _popupController.forward();
     }
 
-    // Reset and play icon pop
     _iconPopController.reset();
     _iconPopController.forward();
 
-    // Trigger confetti if complete
     if (state == DyRaState.complete) {
       _confettiController.play();
     } else {
@@ -95,6 +160,8 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
     _popupController.dispose();
     _iconPopController.dispose();
     _confettiController.dispose();
+    _blinkController?.dispose();
+    _clapController?.dispose();
     super.dispose();
   }
 
@@ -152,19 +219,50 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
     );
   }
 
-  String _getAvatarGifPath(DyRaState state) {
+  String _getAvatarVideoPath(DyRaState state) {
     if (state == DyRaState.reaction || state == DyRaState.complete || state == DyRaState.encourage || state == DyRaState.typing) {
-      return 'assets/animations/dyra_clap.gif'; // Clapping GIF after submitting answer or while typing
+      return 'assets/animations/clapping.mp4'; 
     } else {
-      return 'assets/animations/dyra_blink.gif'; // User's blinking animation
+      return 'assets/animations/blinking.mp4'; 
     }
+  }
+
+  Widget _buildAvatarMedia() {
+    bool isClapState = _getAvatarVideoPath(widget.state) == 'assets/animations/clapping.mp4';
+    VideoPlayerController? activeController;
+
+    if (isClapState && _isClapInitialized && _clapController != null) {
+      activeController = _clapController;
+    } else if (_isBlinkInitialized && _blinkController != null) {
+      activeController = _blinkController;
+    }
+
+    if (activeController != null && activeController.value.isInitialized) {
+      return SizedBox(
+        width: 240,
+        height: 240,
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: activeController.value.size.width > 0 ? activeController.value.size.width : 240,
+            height: activeController.value.size.height > 0 ? activeController.value.size.height : 240,
+            child: VideoPlayer(activeController),
+          ),
+        ),
+      );
+    }
+
+    // Fallback: Display Mascot avatar image so character is always visible
+    return Image.asset(
+      'assets/images/mascot.png',
+      width: 200,
+      height: 200,
+      fit: BoxFit.contain,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Define states
-    bool isListening = widget.state == DyRaState.listening || widget.state == DyRaState.typing;
-
     return AnimatedContainer(
       duration: const Duration(milliseconds: 500),
       color: Colors.transparent,
@@ -173,7 +271,6 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
-          // Background Confetti (Only plays on complete)
           ConfettiWidget(
             confettiController: _confettiController,
             blastDirectionality: BlastDirectionality.explosive,
@@ -184,116 +281,31 @@ class _DyRaCompanionState extends State<DyRaCompanion> with TickerProviderStateM
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Character Avatar with Springy Popup Entrance (matches media_1788374090845.png)
-              SlideTransition(
-                position: _popupSlideAnimation,
-                child: ScaleTransition(
-                  scale: _popupScaleAnimation,
-                  child: FadeTransition(
-                    opacity: _popupFadeAnimation,
-                    child: Container(
-                      width: 240,
-                      height: 240,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Image.asset(
-                            _getAvatarGifPath(widget.state),
-                            key: ValueKey(_getAvatarGifPath(widget.state)),
-                            width: 240,
-                            height: 240,
-                            fit: BoxFit.cover,
-                          ),
-                          _buildIconOverlay(),
-                        ],
-                      ),
+              ScaleTransition(
+                scale: _popupScaleAnimation,
+                child: FadeTransition(
+                  opacity: _popupFadeAnimation,
+                  child: Container(
+                    width: 240,
+                    height: 240,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        _buildAvatarMedia(),
+                        _buildIconOverlay(),
+                      ],
                     ),
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 10),
-              
-              // Animated Voice Hearing Waveform
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                opacity: isListening ? 1.0 : 0.0,
-                child: const _VoiceWaveform(),
-              ),
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Custom animated voice hearing waveform
-class _VoiceWaveform extends StatefulWidget {
-  const _VoiceWaveform({Key? key}) : super(key: key);
-
-  @override
-  _VoiceWaveformState createState() => _VoiceWaveformState();
-}
-
-class _VoiceWaveformState extends State<_VoiceWaveform> with SingleTickerProviderStateMixin {
-  late AnimationController _waveController;
-
-  @override
-  void initState() {
-    super.initState();
-    _waveController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 450),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _waveController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(27, (index) {
-          return AnimatedBuilder(
-            animation: _waveController,
-            builder: (context, child) {
-              // Create dynamic audio waveform height calculation
-              double waveMultiplier = math.sin((index / 27) * math.pi); // Bell curve center height
-              double val = math.sin(_waveController.value * math.pi * 2 + (index * 0.4));
-              double height = 4 + (val.abs() * 24 * waveMultiplier);
-
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                width: 3.5,
-                height: height,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDA251D),
-                  borderRadius: BorderRadius.circular(2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFDA251D).withOpacity(0.4),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    )
-                  ],
-                ),
-              );
-            },
-          );
-        }),
       ),
     );
   }

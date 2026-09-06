@@ -280,51 +280,51 @@ final List<StoryQuestion> storyQuestions = [
       text: "You wake up in a strange place with nothing with you. What is the first thing you would worry about?",
       type: 'open',
       concept: "General awareness / immediate priorities",
-      avatarLine: "Interesting thought - let's see what happens next."),
+      avatarLine: "Interesting thought. Let's see what happens next."),
   StoryQuestion(
       id: 2,
       text: "You have not eaten since morning. What will you do now?",
       type: 'open',
       concept: "Food",
-      avatarLine: "You're thinking it through - keep going."),
+      avatarLine: "Good thinking! Let's move on to the next step."),
   StoryQuestion(
       id: 3,
       text: "It's getting dark and you have no place to sleep. What is your plan?",
       type: 'open',
       concept: "Shelter",
-      avatarLine: "Okay, let's see where that takes you."),
+      avatarLine: "Great plan! Let me show you what happens next."),
   StoryQuestion(
       id: 4,
       text: "Someone tells you there is a safe place to stay, but it is very far away. You need to reach it before dark. What would you do?",
       type: 'mcq',
       options: ["Start walking", "Ask someone for a lift", "Find a way to pay for transport", "Look for another safe option nearby"],
       concept: "Transport",
-      avatarLine: "You've made your choice - let's see what happens."),
+      avatarLine: "You've made your choice. Let's keep going."),
   StoryQuestion(
       id: 5,
       text: "You finally remember one person who can help you - but they are far away. How could you reach them?",
       type: 'open',
       concept: "Phone / communication as access",
-      avatarLine: "Good thinking - let's follow that idea."),
+      avatarLine: "Good idea! Let's follow that plan."),
   StoryQuestion(
       id: 6,
       text: "A shopkeeper says he will pay you if you help him load some boxes. What do you do?",
       type: 'mcq',
       options: ["Do the work", "Ask how much he will pay first", "Say no and look elsewhere", "Ask what work needs to be done"],
       concept: "Earning / effort for money",
-      avatarLine: "Let's find out where this decision takes you."),
+      avatarLine: "That is a smart decision. Let's see where it takes you."),
   StoryQuestion(
       id: 7,
       text: "You finally earn Rs. 100. You cannot afford everything. What will you choose?",
       type: 'budget',
       concept: "First money decision / prioritization",
-      avatarLine: "You've made your choices - let's see what they tell us."),
+      avatarLine: "You've made your budget choices. Let's review the results."),
   StoryQuestion(
       id: 8,
       text: "After everything you faced today, which needs felt impossible to ignore - and why?",
       type: 'open',
       concept: "Closing reflection",
-      avatarLine: "You've noticed something important. Let's put it together."),
+      avatarLine: "Wonderful reflection! You have completed this module."),
 ];
 
 final List<String> genericFeedbackPool = [
@@ -459,6 +459,18 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
     await flutterTts.setPitch(1.0);
   }
 
+  void _playSuccessChime() {
+    try {
+      SystemSound.play(SystemSoundType.click);
+    } catch (_) {}
+  }
+
+  void _playErrorChime() {
+    try {
+      SystemSound.play(SystemSoundType.alert);
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     _hintTimer?.cancel();
@@ -471,10 +483,8 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
       _assistantState = AssistantState.appearing;
     });
     
-    flutterTts.speak("Here is your next question.");
-    
-    // Voice plays for 2 seconds (welcome), then transitions to listening
-    Future.delayed(const Duration(seconds: 2), () {
+    // Welcome sequence
+    Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         setState(() {
           _assistantState = AssistantState.listening;
@@ -486,6 +496,7 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
 
   void _safeSpeak(String text) {
     try {
+      flutterTts.stop();
       flutterTts.speak(text);
     } catch (e) {
       debugPrint("TTS error: $e");
@@ -494,25 +505,6 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
 
   void _startHintTimer() {
     _hintTimer?.cancel();
-    _hintTimer = Timer(const Duration(seconds: 10), () {
-      if (mounted && _assistantState == AssistantState.listening) {
-        setState(() {
-          _assistantState = AssistantState.hinting;
-        });
-        
-        _safeSpeak("Need a hint? Take your time and think carefully!");
-        
-        // Hint voice plays for 3 seconds, then back to listening
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted && _assistantState == AssistantState.hinting) {
-            setState(() {
-              _assistantState = AssistantState.listening;
-            });
-            _startHintTimer(); // restart in case they still don't answer
-          }
-        });
-      }
-    });
   }
 
   void _submitAnswer() {
@@ -520,44 +512,42 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
 
     if (currentQ.type == 'open') {
       if (_textController.text.trim().isEmpty) {
+        _playErrorChime();
         setState(() {
-          _errorText = "Hey, don't leave it empty! Try telling me what you think.";
+          _errorText = "Please enter your answer.";
         });
+        _safeSpeak("Oh oo! Please enter your answer.");
         return;
       }
     } else if (currentQ.type == 'budget') {
       if (_selectedBudgetItems.isEmpty) {
+        _playErrorChime();
         setState(() {
           _errorText = "Please select at least one item.";
         });
+        _safeSpeak("Oh oo! Please select an item.");
         return;
       }
     }
 
     _hintTimer?.cancel();
-
-    // Determine what to say based on their reply
-    String spokenFeedback = currentQ.avatarLine;
-    if (currentQ.type == 'open') {
-      spokenFeedback = "No worries you can definitely do it";
-    }
+    _playSuccessChime();
 
     setState(() {
       _errorText = "";
       _assistantState = AssistantState.reacting;
-      _isAnswerCorrect = true; // By default assume correct/effort for now
+      _isAnswerCorrect = true;
     });
     
-    _safeSpeak(spokenFeedback);
+    _safeSpeak("Good! We move to next question.");
 
     // Auto-advance logic
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() => _assistantState = AssistantState.guiding);
-        _safeSpeak("Let's move on.");
       }
       
-      Future.delayed(const Duration(seconds: 2), () {
+      Future.delayed(const Duration(seconds: 1), () {
         if (mounted) _nextQuestion();
       });
     });
@@ -823,7 +813,7 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
     final currentQ = storyQuestions[_currentIndex];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF161515),
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
@@ -847,9 +837,22 @@ class _StoryInteractiveScreenState extends State<StoryInteractiveScreen> {
                           style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          currentQ.text,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, height: 1.3),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                currentQ.text,
+                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, height: 1.3),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.volume_up_rounded, color: Color(0xFFDA251D), size: 28),
+                              tooltip: "Listen to Question",
+                              onPressed: () => _safeSpeak(currentQ.text),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 24),
                         if (currentQ.type == 'open') _buildOpenEnded(),
